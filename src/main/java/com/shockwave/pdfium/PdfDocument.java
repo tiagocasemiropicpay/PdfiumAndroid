@@ -111,4 +111,6 @@ public class PdfDocument {
     public boolean hasPage(int index) {
         return mNativePagesPtr.containsKey(index);
     }
+
+    /*package*/ final Map<Integer, Long> mNativeTextPagesPtr = new ArrayMap<>();
 }

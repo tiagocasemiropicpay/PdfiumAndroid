@@ -1,6 +1,7 @@
 package com.shockwave.pdfium;
 
 import android.graphics.RectF;
+import android.content.res.AssetFileDescriptor;
 import android.os.ParcelFileDescriptor;
 import android.support.v4.util.ArrayMap;
 
@@ -111,4 +112,6 @@ public class PdfDocument {
     public boolean hasPage(int index) {
         return mNativePagesPtr.containsKey(index);
     }
+
+    /*package*/ final Map<Integer, Long> mNativeTextPagesPtr = new ArrayMap<>();
 }

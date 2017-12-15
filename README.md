@@ -16,10 +16,12 @@ API is highly compatible with original version, only additional methods were cre
 
 1.8.1 handles errors when using `PdfiumCore#getPageSize(PdfDocument, int)` and returns `Size(0, 0)` when error occurs
 
+1.8.2 merges pull request by [mcsong](https://github.com/mcsong) fixing potential NPE when getting links
+
 ## Installation
 Add to _build.gradle_:
 
-`compile 'com.github.barteksc:pdfium-android:1.8.1'`
+`compile 'com.github.barteksc:pdfium-android:1.8.2'`
 
 Library is available in jcenter and Maven Central repositories.
 

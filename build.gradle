@@ -25,7 +25,7 @@ ext {
     siteUrl = 'https://github.com/barteksc/PdfiumAndroid'
     gitUrl = 'https://github.com/barteksc/PdfiumAndroid.git'
 
-    libraryVersion = '1.8.1'
+    libraryVersion = '1.8.2'
 
     developerId = 'barteksc'
     developerName = 'Bartosz Schiller'
@@ -44,7 +44,7 @@ android {
         minSdkVersion 9
         targetSdkVersion 25
         versionCode 1
-        versionName "1.8.1"
+        versionName "1.8.2"
     }
     buildTypes {
         release {

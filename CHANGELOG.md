@@ -1,3 +1,6 @@
+## 1.8.2 (2017-12-15)
+* Merge pull request by [mcsong](https://github.com/mcsong) fixing potential NPE when getting links
+
 ## 1.8.1 (2017-11-15)
 * Handle `PdfiumCore#getPageSize()` errors and return `Size(0, 0)`
 

@@ -558,22 +558,15 @@ public class PdfiumCore {
         return 0;
     }
 
-    public class Rect {
-        public double left;
-        public double right;
-        public double bottom;
-        public double top;
-    }
-
-    public Rect textPageGetCharBox(PdfDocument doc, int textPageIndex, int index) {
+    public RectF textPageGetCharBox(PdfDocument doc, int textPageIndex, int index) {
         synchronized (lock) {
             try {
                 double[] o = nativeTextGetCharBox(doc.mNativeTextPagesPtr.get(textPageIndex), index);
-                Rect r = new Rect();
-                r.left = o[0];
-                r.right = o[1];
-                r.bottom = o[2];
-                r.top = o[3];
+                RectF r = new RectF();
+                r.left = (float)o[0];
+                r.right = (float)o[1];
+                r.bottom = (float)o[2];
+                r.top = (float)o[3];
                 return r;
             } catch (NullPointerException e) {
                 Log.e(TAG, "mContext may be null");
@@ -616,15 +609,15 @@ public class PdfiumCore {
         return -1;
     }
 
-    public Rect textPageGetRect(PdfDocument doc, int textPageIndex, int rect_index) {
+    public RectF textPageGetRect(PdfDocument doc, int textPageIndex, int rect_index) {
         synchronized (lock) {
             try {
                 double[] o = nativeTextGetRect(doc.mNativeTextPagesPtr.get(textPageIndex), rect_index);
-                Rect r = new Rect();
-                r.left = o[0];
-                r.top = o[1];
-                r.right = o[2];
-                r.bottom = o[3];
+                RectF r = new RectF();
+                r.left = (float)o[0];
+                r.top = (float)o[1];
+                r.right = (float)o[2];
+                r.bottom = (float)o[3];
                 return r;
             } catch (NullPointerException e) {
                 Log.e(TAG, "mContext may be null");
@@ -637,7 +630,7 @@ public class PdfiumCore {
         return null;
     }
 
-    public String textPageGetBoundedText(PdfDocument doc, int textPageIndex, Rect rect, int length) {
+    public String textPageGetBoundedText(PdfDocument doc, int textPageIndex, RectF rect, int length) {
         synchronized (lock) {
             try {
                 short[] buf = new short[length+1];

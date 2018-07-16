@@ -80,13 +80,9 @@ public class PdfiumCore {
 
     private native long nativeGetBookmarkDestIndex(long docPtr, long bookmarkPtr);
 
-    private native long nativeLoadTextPage(long docPtr, int pageIndex);
-
-    private native long[] nativeLoadTextPages(long docPtr, int fromIndex, int toIndex);
+    private native long nativeLoadTextPage(long docPtr, long pagePtr);
 
     private native void nativeCloseTextPage(long pagePtr);
-
-    private native void nativeCloseTextPages(long[] pagesPtr);
 
     private native int nativeTextCountChars(long textPagePtr);
 
@@ -185,10 +181,15 @@ public class PdfiumCore {
 
     /** Open page and store native pointer in {@link PdfDocument} */
     public long openPage(PdfDocument doc, int pageIndex) {
-        long pagePtr;
         synchronized (lock) {
-            pagePtr = nativeLoadPage(doc.mNativeDocPtr, pageIndex);
-            doc.mNativePagesPtr.put(pageIndex, pagePtr);
+            if (doc.mNativePagesPtr == null) {
+                return -1;
+            }
+            Long pagePtr = doc.mNativePagesPtr.get(pageIndex);
+            if (pagePtr == null) {
+                pagePtr = nativeLoadPage(doc.mNativeDocPtr, pageIndex);
+                doc.mNativePagesPtr.put(pageIndex, pagePtr);
+            }
             return pagePtr;
         }
 
@@ -348,10 +349,12 @@ public class PdfiumCore {
     /** Release native resources and opened file */
     public void closeDocument(PdfDocument doc) {
         synchronized (lock) {
-            for (Integer index : doc.mNativePagesPtr.keySet()) {
-                nativeClosePage(doc.mNativePagesPtr.get(index));
+            if (doc.mNativePagesPtr != null) {
+                for (Integer index : doc.mNativePagesPtr.keySet()) {
+                    nativeClosePage(doc.mNativePagesPtr.get(index));
+                }
+                doc.mNativePagesPtr.clear();
             }
-            doc.mNativePagesPtr.clear();
 
             nativeCloseDocument(doc.mNativeDocPtr);
 
@@ -468,13 +471,26 @@ public class PdfiumCore {
     }
 
     public long openTextPage(PdfDocument doc, int pageIndex) {
-        long textPagePtr;
         synchronized (lock) {
-            textPagePtr = nativeLoadTextPage(doc.mNativeDocPtr, pageIndex);
-            doc.mNativeTextPagesPtr.put(pageIndex, textPagePtr);
+            long page = openPage(doc, pageIndex);
+            Long textPagePtr = doc.mNativeTextPagesPtr.get(pageIndex);
+            if (textPagePtr == null) {
+                textPagePtr = nativeLoadTextPage(doc.mNativeDocPtr, page);
+                doc.mNativeTextPagesPtr.put(pageIndex, textPagePtr);
+            }
             return textPagePtr;
         }
 
+    }
+
+    public void closeTextPage(PdfDocument doc, int pageIndex) {
+        synchronized (lock) {
+            final Long nativeLoadTextPage = doc.mNativeTextPagesPtr.get(pageIndex);
+            if (nativeLoadTextPage != null) {
+                nativeCloseTextPage(nativeLoadTextPage);
+                doc.mNativeTextPagesPtr.remove(pageIndex);
+            }
+        }
     }
 
     public long[] openTextPage(PdfDocument doc, int fromIndex, int toIndex) {

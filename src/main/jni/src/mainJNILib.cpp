@@ -692,11 +692,11 @@ JNI_FUNC(jobject, PdfiumCore, nativePageCoordsToDevice)(JNI_ARGS, jlong pagePtr,
 //////////////////////////////////////////
 //Begin FPDF_TEXTPAGE section
 
-static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIndex){
+static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, jlong pagePtr){
     try{
         if(doc == NULL) throw "Get page document null";
 
-        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(loadPageInternal(env, doc, textPageIndex));
+        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
         if(page != NULL){
             FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
             if (textPage == NULL) {
@@ -718,9 +718,9 @@ static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIn
 
 static void closeTextPageInternal(jlong textPagePtr) { FPDFText_ClosePage(reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr)); }
 
-JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jint pageIndex){
+JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jlong pagePtr){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
-    return loadTextPageInternal(env, doc, (int)pageIndex);
+    return loadTextPageInternal(env, doc, pagePtr);
 }
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jint fromIndex, jint toIndex){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);

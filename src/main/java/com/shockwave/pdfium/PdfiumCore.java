@@ -3,6 +3,7 @@ package com.shockwave.pdfium;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -114,6 +115,9 @@ public class PdfiumCore {
     private native Point nativePageCoordsToDevice(long pagePtr, int startX, int startY, int sizeX,
                                                   int sizeY, int rotate, double pageX, double pageY);
 
+    private native PointF nativeDeviceCoordsToPage(long pagePtr, int startX, int startY, int sizeX,
+                                                   int sizeY, int rotate, int deviceX, int deviceY);
+
 
     /* synchronize native methods */
     private static final Object lock = new Object();
@@ -195,6 +199,16 @@ public class PdfiumCore {
             return pagePtr;
         }
 
+    }
+
+    public void closePage(PdfDocument doc, int pageIndex) {
+        synchronized (lock) {
+            final Long pagePtr = doc.mNativePagesPtr.get(pageIndex);
+            if (pagePtr != null) {
+                nativeClosePage(pagePtr);
+                doc.mNativePagesPtr.remove(pageIndex);
+            }
+        }
     }
 
     /** Open range of pages and store native pointers in {@link PdfDocument} */
@@ -394,13 +408,13 @@ public class PdfiumCore {
             List<PdfDocument.Bookmark> topLevel = new ArrayList<>();
             Long first = nativeGetFirstChildBookmark(doc.mNativeDocPtr, null);
             if (first != null) {
-                recursiveGetBookmark(topLevel, doc, first);
+                recursiveGetBookmark(topLevel, doc, first, 1);
             }
             return topLevel;
         }
     }
 
-    private void recursiveGetBookmark(List<PdfDocument.Bookmark> tree, PdfDocument doc, long bookmarkPtr) {
+    private void recursiveGetBookmark(List<PdfDocument.Bookmark> tree, PdfDocument doc, long bookmarkPtr, long level) {
         PdfDocument.Bookmark bookmark = new PdfDocument.Bookmark();
         bookmark.mNativePtr = bookmarkPtr;
         bookmark.title = nativeGetBookmarkTitle(bookmarkPtr);
@@ -408,13 +422,13 @@ public class PdfiumCore {
         tree.add(bookmark);
 
         Long child = nativeGetFirstChildBookmark(doc.mNativeDocPtr, bookmarkPtr);
-        if (child != null) {
-            recursiveGetBookmark(bookmark.getChildren(), doc, child);
+        if (child != null && level < 16) {
+            recursiveGetBookmark(bookmark.getChildren(), doc, child, level++);
         }
 
         Long sibling = nativeGetSiblingBookmark(doc.mNativeDocPtr, bookmarkPtr);
-        if (sibling != null) {
-            recursiveGetBookmark(tree, doc, sibling);
+        if (sibling != null && level < 16) {
+            recursiveGetBookmark(tree, doc, sibling, level++);
         }
     }
 
@@ -463,6 +477,27 @@ public class PdfiumCore {
     }
 
     /**
+     * Map device screen coordinates to page coordinates
+     *
+     * @param doc       pdf document
+     * @param pageIndex index of page
+     * @param startX    left pixel position of the display area in device coordinates
+     * @param startY    top pixel position of the display area in device coordinates
+     * @param sizeX     horizontal size (in pixels) for displaying the page
+     * @param sizeY     vertical size (in pixels) for displaying the page
+     * @param rotate    page orientation: 0 (normal), 1 (rotated 90 degrees clockwise),
+     *                  2 (rotated 180 degrees), 3 (rotated 90 degrees counter-clockwise)
+     * @param deviceX   X value in page coordinates
+     * @param deviceY   Y value in page coordinate
+     * @return mapped coordinates
+     */
+    public PointF mapDeviceCoordsToPage(PdfDocument doc, int pageIndex, int startX, int startY, int sizeX,
+                                        int sizeY, int rotate, int deviceX, int deviceY) {
+        long pagePtr = doc.mNativePagesPtr.get(pageIndex);
+        return nativeDeviceCoordsToPage(pagePtr, startX, startY, sizeX, sizeY, rotate, deviceX, deviceY);
+    }
+
+    /**
      * @see PdfiumCore#mapPageCoordsToDevice(PdfDocument, int, int, int, int, int, int, double, double)
      * @return mapped coordinates
      */
@@ -473,6 +508,20 @@ public class PdfiumCore {
                 coords.left, coords.top);
         Point rightBottom = mapPageCoordsToDevice(doc, pageIndex, startX, startY, sizeX, sizeY, rotate,
                 coords.right, coords.bottom);
+        return new RectF(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y);
+    }
+
+    /**
+     * @see PdfiumCore#mapDeviceCoordsToPage(PdfDocument, int, int, int, int, int, int, int, int)
+     * @return mapped coordinates
+     */
+    public RectF mapRectToPage(PdfDocument doc, int pageIndex, int startX, int startY, int sizeX,
+                                 int sizeY, int rotate, RectF coords) {
+
+        PointF leftTop = mapDeviceCoordsToPage(doc, pageIndex, startX, startY, sizeX, sizeY, rotate,
+                (int)coords.left, (int)coords.top);
+        PointF rightBottom = mapDeviceCoordsToPage(doc, pageIndex, startX, startY, sizeX, sizeY, rotate,
+                (int)coords.right, (int)coords.bottom);
         return new RectF(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y);
     }
 

@@ -463,8 +463,8 @@ public class PdfiumCore {
     }
 
     /**
-     * @return mapped coordinates
      * @see PdfiumCore#mapPageCoordsToDevice(PdfDocument, int, int, int, int, int, int, double, double)
+     * @return mapped coordinates
      */
     public RectF mapRectToDevice(PdfDocument doc, int pageIndex, int startX, int startY, int sizeX,
                                  int sizeY, int rotate, RectF coords) {

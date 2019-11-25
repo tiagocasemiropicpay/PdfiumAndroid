@@ -118,6 +118,7 @@ public class PdfiumCore {
     private native PointF nativeDeviceCoordsToPage(long pagePtr, int startX, int startY, int sizeX,
                                                    int sizeY, int rotate, int deviceX, int deviceY);
 
+    private native boolean nativeSaveAsCopy(long docPtr, PdfWriteCallback callback);
 
     /* synchronize native methods */
     private static final Object lock = new Object();
@@ -726,5 +727,9 @@ public class PdfiumCore {
             }
             return null;
         }
+    }
+
+    public boolean saveAsCopy(PdfDocument doc, PdfWriteCallback callback) {
+        return nativeSaveAsCopy(doc.mNativeDocPtr, callback);
     }
 }

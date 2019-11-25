@@ -17,6 +17,7 @@ using namespace android;
 #include <fpdfview.h>
 #include <fpdf_doc.h>
 #include <fpdf_text.h>
+#include <fpdf_save.h>
 #include <string>
 #include <vector>
 
@@ -867,6 +868,48 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedText)(JNI_ARGS, jlong textPagePtr
         env->ReleaseShortArrayElements(arr, (jshort*)buffer, JNI_ABORT);
     }
     return output;
+}
+
+class FileWrite : public FPDF_FILEWRITE {
+	public:
+	jobject callbackObject;
+	jmethodID callbackMethodID;
+	_JNIEnv *env;
+
+	static int WriteBlockCallback(FPDF_FILEWRITE* pFileWrite, const void* data, unsigned long size) {
+		FileWrite* pThis = static_cast<FileWrite*>(pFileWrite);
+		_JNIEnv *env = pThis->env;
+		//Convert the native array to Java array.
+		jbyteArray a = env->NewByteArray(size);
+		if (a != NULL) {
+			env->SetByteArrayRegion(a, 0, size, (const jbyte *)data);
+			return env->CallIntMethod(pThis->callbackObject, pThis->callbackMethodID, a);
+		}
+		return -1;
+	}
+};
+
+/*DLLEXPORT FPDF_BOOL STDCALL FPDF_SaveAsCopy(FPDF_DOCUMENT document,
+                                            FPDF_FILEWRITE* pFileWrite,
+                                            FPDF_DWORD flags);
+*/
+
+JNI_FUNC(jboolean, PdfiumCore, nativeSaveAsCopy)(JNI_ARGS, jlong documentPtr, jobject callback) {
+	jclass callbackClass = env->FindClass("com/shockwave/pdfium/PdfWriteCallback");
+	if (callback != NULL && env->IsInstanceOf(callback, callbackClass)) {
+		//Setup the callback to Java.
+		FileWrite fw;
+		fw.version = 1;
+		fw.FPDF_FILEWRITE::WriteBlock = FileWrite::WriteBlockCallback;
+		fw.callbackObject = callback;
+		fw.callbackMethodID = env->GetMethodID(callbackClass, "WriteBlock", "([B)I");
+		fw.env = env;
+
+		DocumentFile *doc = reinterpret_cast<DocumentFile*>(documentPtr);
+		jboolean output = (jboolean)FPDF_SaveAsCopy(doc->pdfDocument, &fw, 0);
+		return output;
+	}
+	return false;
 }
 
 }//extern C

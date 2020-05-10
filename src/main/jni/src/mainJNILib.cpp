@@ -17,6 +17,7 @@ using namespace android;
 #include <fpdfview.h>
 #include <fpdf_doc.h>
 #include <fpdf_text.h>
+#include <fpdf_save.h>
 #include <string>
 #include <vector>
 
@@ -689,14 +690,27 @@ JNI_FUNC(jobject, PdfiumCore, nativePageCoordsToDevice)(JNI_ARGS, jlong pagePtr,
     return env->NewObject(clazz, constructorID, deviceX, deviceY);
 }
 
+JNI_FUNC(jobject, PdfiumCore, nativeDeviceCoordsToPage)(JNI_ARGS, jlong pagePtr, jint startX, jint startY, jint sizeX,
+                                            jint sizeY, jint rotate, jint deviceX, jint deviceY) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    double pageX, pageY;
+
+    FPDF_DeviceToPage(page, startX, startY, sizeX, sizeY, rotate, deviceX, deviceY, &pageX, &pageY);
+
+    jclass clazz = env->FindClass("android/graphics/PointF");
+    jmethodID constructorID = env->GetMethodID(clazz, "<init>", "(FF)V");
+    return env->NewObject(clazz, constructorID, pageX, pageY);
+}
+
+
 //////////////////////////////////////////
 //Begin FPDF_TEXTPAGE section
 
-static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIndex){
+static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, jlong pagePtr){
     try{
         if(doc == NULL) throw "Get page document null";
 
-        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(loadPageInternal(env, doc, textPageIndex));
+        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
         if(page != NULL){
             FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
             if (textPage == NULL) {
@@ -718,9 +732,9 @@ static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIn
 
 static void closeTextPageInternal(jlong textPagePtr) { FPDFText_ClosePage(reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr)); }
 
-JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jint pageIndex){
+JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jlong pagePtr){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
-    return loadTextPageInternal(env, doc, (int)pageIndex);
+    return loadTextPageInternal(env, doc, pagePtr);
 }
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jint fromIndex, jint toIndex){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
@@ -854,6 +868,48 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedText)(JNI_ARGS, jlong textPagePtr
         env->ReleaseShortArrayElements(arr, (jshort*)buffer, JNI_ABORT);
     }
     return output;
+}
+
+class FileWrite : public FPDF_FILEWRITE {
+	public:
+	jobject callbackObject;
+	jmethodID callbackMethodID;
+	_JNIEnv *env;
+
+	static int WriteBlockCallback(FPDF_FILEWRITE* pFileWrite, const void* data, unsigned long size) {
+		FileWrite* pThis = static_cast<FileWrite*>(pFileWrite);
+		_JNIEnv *env = pThis->env;
+		//Convert the native array to Java array.
+		jbyteArray a = env->NewByteArray(size);
+		if (a != NULL) {
+			env->SetByteArrayRegion(a, 0, size, (const jbyte *)data);
+			return env->CallIntMethod(pThis->callbackObject, pThis->callbackMethodID, a);
+		}
+		return -1;
+	}
+};
+
+/*DLLEXPORT FPDF_BOOL STDCALL FPDF_SaveAsCopy(FPDF_DOCUMENT document,
+                                            FPDF_FILEWRITE* pFileWrite,
+                                            FPDF_DWORD flags);
+*/
+
+JNI_FUNC(jboolean, PdfiumCore, nativeSaveAsCopy)(JNI_ARGS, jlong documentPtr, jobject callback) {
+	jclass callbackClass = env->FindClass("com/shockwave/pdfium/PdfWriteCallback");
+	if (callback != NULL && env->IsInstanceOf(callback, callbackClass)) {
+		//Setup the callback to Java.
+		FileWrite fw;
+		fw.version = 1;
+		fw.FPDF_FILEWRITE::WriteBlock = FileWrite::WriteBlockCallback;
+		fw.callbackObject = callback;
+		fw.callbackMethodID = env->GetMethodID(callbackClass, "WriteBlock", "([B)I");
+		fw.env = env;
+
+		DocumentFile *doc = reinterpret_cast<DocumentFile*>(documentPtr);
+		jboolean output = (jboolean)FPDF_SaveAsCopy(doc->pdfDocument, &fw, 0);
+		return output;
+	}
+	return false;
 }
 
 }//extern C

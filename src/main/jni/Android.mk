@@ -5,15 +5,16 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aospPdfium
 
 ARCH_PATH = $(TARGET_ARCH_ABI)
-ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
-    ARCH_PATH = armeabi
-endif
-
-ifeq ($(TARGET_ARCH_ABI), arm64-v8a)
-    ARCH_PATH = arm64
-endif
 
 LOCAL_SRC_FILES := $(LOCAL_PATH)/lib/$(ARCH_PATH)/libmodpdfium.so
+
+include $(PREBUILT_SHARED_LIBRARY)
+
+#c++_shared
+include $(CLEAR_VARS)
+LOCAL_MODULE := libmodc++_shared
+
+LOCAL_SRC_FILES := $(LOCAL_PATH)/lib/$(ARCH_PATH)/libc++_shared.so
 
 include $(PREBUILT_SHARED_LIBRARY)
 

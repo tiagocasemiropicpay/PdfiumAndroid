@@ -1,3 +1,14 @@
+## 1.9.0 (2018-06-29)
+* Updated Pdfium library to 7.1.2_r36
+* Changed `gnustl_static` to `c++_shared`
+* Update Gradle plugins
+* Update compile SDK and support library to 26
+* Change minimum SDK to 14
+* Add support for mips64
+
+## 1.8.2 (2017-12-15)
+* Merge pull request by [mcsong](https://github.com/mcsong) fixing potential NPE when getting links
+
 ## 1.8.1 (2017-11-15)
 * Handle `PdfiumCore#getPageSize()` errors and return `Size(0, 0)`
 

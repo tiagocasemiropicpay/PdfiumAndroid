@@ -7,19 +7,18 @@ Forked for use with [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfVie
 
 API is highly compatible with original version, only additional methods were created.
 
-## What's new in 1.8.0?
-* Add method for reading links from given page
-* Add method for mapping page coordinates to screen coordinates
-* Add `PdfiumCore#getPageSize(...)` method, which does not require page to be opened
-* Add `Size` and `SizeF` utility classes
-* Add javadoc comments to `PdfiumCore`
-
-1.8.1 handles errors when using `PdfiumCore#getPageSize(PdfDocument, int)` and returns `Size(0, 0)` when error occurs
+## What's new in 1.9.0?
+* Updated Pdfium library to 7.1.2_r36
+* Changed `gnustl_static` to `c++_shared`
+* Update Gradle plugins
+* Update compile SDK and support library to 26
+* Change minimum SDK to 14
+* Add support for mips64
 
 ## Installation
 Add to _build.gradle_:
 
-`compile 'com.github.barteksc:pdfium-android:1.8.1'`
+`compile 'com.github.barteksc:pdfium-android:1.9.0'`
 
 Library is available in jcenter and Maven Central repositories.
 

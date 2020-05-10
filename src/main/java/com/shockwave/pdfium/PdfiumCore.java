@@ -60,6 +60,10 @@ public class PdfiumCore {
 
     private native int nativeGetPageHeightPoint(long pagePtr);
 
+    private native double nativeGetFontSize(long pagePtr, int charIndex);
+
+    private native RectF nativeGetPageCropBox(long pagePtr);
+
     //private native long nativeGetNativeWindow(Surface surface);
     //private native void nativeRenderPage(long pagePtr, long nativeWindowPtr);
     private native void nativeRenderPage(long pagePtr, Surface surface, int dpi,
@@ -281,6 +285,34 @@ public class PdfiumCore {
                 return nativeGetPageHeightPoint(pagePtr);
             }
             return 0;
+        }
+    }
+
+    /**
+     * Get character font size in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public double getFontSize(PdfDocument doc, int pageIndex, int charIndex) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(pageIndex)) != null) {
+                return nativeGetFontSize(pagePtr, charIndex);
+            }
+            return 0.0;
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageCropBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                return nativeGetPageCropBox(pagePtr);
+            }
+            return new RectF();
         }
     }
 
@@ -649,6 +681,21 @@ public class PdfiumCore {
             }
         }
         return null;
+    }
+
+    public double textPageGetFontSize(PdfDocument doc, int textPageIndex, int index) {
+        synchronized (lock) {
+            try {
+                return nativeGetFontSize(doc.mNativeTextPagesPtr.get(textPageIndex), index);
+            } catch (NullPointerException e) {
+                Log.e(TAG, "mContext may be null");
+                e.printStackTrace();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception throw from native");
+                e.printStackTrace();
+            }
+        }
+        return 0.0;
     }
 
     public int textPageGetCharIndexAtPos(PdfDocument doc, int textPageIndex, double x, double y, double xTolerance, double yTolerance) {

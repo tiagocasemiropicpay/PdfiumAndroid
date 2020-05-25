@@ -62,7 +62,7 @@ public class PdfiumCore {
 
     private native double nativeGetFontSize(long pagePtr, int charIndex);
 
-    private native RectF nativeGetPageCropBox(long pagePtr);
+    private native double[] nativeGetPageCropBox(long pagePtr);
 
     //private native long nativeGetNativeWindow(Surface surface);
     //private native void nativeRenderPage(long pagePtr, long nativeWindowPtr);
@@ -310,7 +310,14 @@ public class PdfiumCore {
         synchronized (lock) {
             Long pagePtr;
             if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
-                return nativeGetPageCropBox(pagePtr);
+                double[] o =  nativeGetPageCropBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = (float)o[0];
+                r.right = (float)o[1];
+                r.bottom = (float)o[2];
+                r.top = (float)o[3];
+                return r;
             }
             return new RectF();
         }

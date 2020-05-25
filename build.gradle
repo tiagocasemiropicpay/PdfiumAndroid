@@ -5,7 +5,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.2'
+        classpath 'com.android.tools.build:gradle:3.6.3'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
     }
@@ -44,11 +44,11 @@ ext {
 }
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 29
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion 29
         versionCode 1
         versionName "1.9.0"
     }
@@ -74,7 +74,7 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:support-v4:26.1.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 }
 
 apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
@@ -82,16 +82,17 @@ apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.
 
 publishing {
     publications {
-        contentproviderbase(MavenPublication) {
+        pdfium(MavenPublication) {
             groupId 'com.agora_net'
             artifactId 'pdfium'
-            version '1.1.709' // + getCommitCount()
+            version '1.1.711' // + getCommitCount()
             artifact("$buildDir/outputs/aar/PdfiumAndroid-release.aar")
         }
     }
     repositories {
         maven {
-            url "/var/www/maven/repository/"
+//            url "/var/www/maven/repository/"
+            url = "$buildDir/repo"
         }
     }
 }

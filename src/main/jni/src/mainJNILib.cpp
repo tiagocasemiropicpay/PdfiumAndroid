@@ -342,21 +342,25 @@ JNI_FUNC(void, PdfiumCore, nativeClosePages)(JNI_ARGS, jlongArray pagesPtr){
     for(i = 0; i < length; i++){ closePageInternal(pages[i]); }
 }
 
-JNI_FUNC(jobject, PdfiumCore, nativeGetPageCropBox)(JNI_ARGS, jlong pagePtr) {
+JNI_FUNC(jdoubleArray, PdfiumCore, nativeGetPageCropBox)(JNI_ARGS, jlong pagePtr) {
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jdoubleArray result = env->NewDoubleArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
 
-    float left, bottom, right, top;
-    FPDFPage_GetCropBox(page, &left, &bottom, &right, &top);
+    double rect[4];
+    FPDFPage_GetCropBox(page, &rect[0], &rect[1], &rect[2], &rect[3]);
 
-    jclass clazz = env->FindClass("android/graphics/RectF");
-    jmethodID constructorID = env->GetMethodID(clazz, "<init>", "(FFFF)V");
-    return env->NewObject(clazz, constructorID, left, top, right, bottom);
+    env->SetDoubleArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
 }
 
 JNI_FUNC(jint, PdfiumCore, nativeGetPageWidthPixel)(JNI_ARGS, jlong pagePtr, jint dpi){
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     return (jint)(FPDF_GetPageWidth(page) * dpi / 72);
 }
+
 JNI_FUNC(jint, PdfiumCore, nativeGetPageHeightPixel)(JNI_ARGS, jlong pagePtr, jint dpi){
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     return (jint)(FPDF_GetPageHeight(page) * dpi / 72);

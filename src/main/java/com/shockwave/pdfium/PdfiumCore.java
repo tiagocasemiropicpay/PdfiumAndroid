@@ -26,10 +26,11 @@ public class PdfiumCore {
 
     static {
         try {
-            System.loadLibrary("c++_shared");
-            System.loadLibrary("modpng");
-            System.loadLibrary("modft2");
-            System.loadLibrary("modpdfium");
+            System.loadLibrary("c++.cr");
+            System.loadLibrary("chrome_zlib.cr");
+            System.loadLibrary("icui18n.cr");
+            System.loadLibrary("icuuc.cr");
+            System.loadLibrary("pdfium.cr");
             System.loadLibrary("jniPdfium");
         } catch (UnsatisfiedLinkError e) {
             Log.e(TAG, "Native libraries failed to load - " + e);
@@ -62,7 +63,11 @@ public class PdfiumCore {
 
     private native double nativeGetFontSize(long pagePtr, int charIndex);
 
-    private native double[] nativeGetPageCropBox(long pagePtr);
+    private native float[] nativeGetPageMediaBox(long pagePtr);
+    private native float[] nativeGetPageCropBox(long pagePtr);
+    private native float[] nativeGetPageBleedBox(long pagePtr);
+    private native float[] nativeGetPageTrimBox(long pagePtr);
+    private native float[] nativeGetPageArtBox(long pagePtr);
 
     //private native long nativeGetNativeWindow(Surface surface);
     //private native void nativeRenderPage(long pagePtr, long nativeWindowPtr);
@@ -74,7 +79,7 @@ public class PdfiumCore {
     private native void nativeRenderPageBitmap(long pagePtr, Bitmap bitmap, int dpi,
                                                int startX, int startY,
                                                int drawSizeHor, int drawSizeVer,
-                                               boolean renderAnnot);
+                                               boolean renderAnnot, boolean textMask);
 
     private native String nativeGetDocumentMetaText(long docPtr, String tag);
 
@@ -310,13 +315,102 @@ public class PdfiumCore {
         synchronized (lock) {
             Long pagePtr;
             if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
-                double[] o =  nativeGetPageCropBox(pagePtr);
+                float[] o =  nativeGetPageCropBox(pagePtr);
 
                 RectF r = new RectF();
-                r.left = (float)o[0];
-                r.right = (float)o[1];
-                r.bottom = (float)o[2];
-                r.top = (float)o[3];
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
+                return r;
+            }
+            return new RectF();
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageMediaBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                float[] o =  nativeGetPageMediaBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
+                return r;
+            }
+            return new RectF();
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageBleedBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                float[] o =  nativeGetPageBleedBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
+                return r;
+            }
+            return new RectF();
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageTrimBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                float[] o =  nativeGetPageTrimBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
+                return r;
+            }
+            return new RectF();
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageArtBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                float[] o =  nativeGetPageArtBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
                 return r;
             }
             return new RectF();
@@ -375,8 +469,8 @@ public class PdfiumCore {
      * </ul>
      */
     public void renderPageBitmap(PdfDocument doc, Bitmap bitmap, int pageIndex,
-                                 int startX, int startY, int drawSizeX, int drawSizeY) {
-        renderPageBitmap(doc, bitmap, pageIndex, startX, startY, drawSizeX, drawSizeY, false);
+                                 int startX, int startY, int drawSizeX, int drawSizeY, boolean textMask) {
+        renderPageBitmap(doc, bitmap, pageIndex, startX, startY, drawSizeX, drawSizeY, false, textMask);
     }
 
     /**
@@ -387,11 +481,11 @@ public class PdfiumCore {
      */
     public void renderPageBitmap(PdfDocument doc, Bitmap bitmap, int pageIndex,
                                  int startX, int startY, int drawSizeX, int drawSizeY,
-                                 boolean renderAnnot) {
+                                 boolean renderAnnot, boolean textMask) {
         synchronized (lock) {
             try {
                 nativeRenderPageBitmap(doc.mNativePagesPtr.get(pageIndex), bitmap, mCurrentDpi,
-                        startX, startY, drawSizeX, drawSizeY, renderAnnot);
+                        startX, startY, drawSizeX, drawSizeY, renderAnnot, textMask);
             } catch (NullPointerException e) {
                 Log.e(TAG, "mContext may be null");
                 e.printStackTrace();

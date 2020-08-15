@@ -18,6 +18,7 @@ using namespace android;
 #include <fpdf_doc.h>
 #include <fpdf_text.h>
 #include <fpdf_save.h>
+#include <fpdf_transformpage.h>
 #include <string>
 #include <vector>
 
@@ -342,17 +343,98 @@ JNI_FUNC(void, PdfiumCore, nativeClosePages)(JNI_ARGS, jlongArray pagesPtr){
     for(i = 0; i < length; i++){ closePageInternal(pages[i]); }
 }
 
-JNI_FUNC(jdoubleArray, PdfiumCore, nativeGetPageCropBox)(JNI_ARGS, jlong pagePtr) {
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageCropBox)(JNI_ARGS, jlong pagePtr) {
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
-    jdoubleArray result = env->NewDoubleArray(4);
+    jfloatArray result = env->NewFloatArray(4);
     if (result == NULL) {
         return NULL;
     }
 
-    double rect[4];
-    FPDFPage_GetCropBox(page, &rect[0], &rect[1], &rect[2], &rect[3]);
+    float rect[4];
+    if (!FPDFPage_GetCropBox(page, &rect[0], &rect[1], &rect[2], &rect[3])) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    }
 
-    env->SetDoubleArrayRegion(result, 0, 4, (jfloat*)rect);
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
+}
+
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageMediaBox)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jfloatArray result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    float rect[4];
+    if (!FPDFPage_GetMediaBox(page, &rect[0], &rect[1], &rect[2], &rect[3])) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    }
+
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
+}
+
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageBleedBox)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jfloatArray result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    float rect[4];
+    if (!FPDFPage_GetBleedBox(page, &rect[0], &rect[1], &rect[2], &rect[3])) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    }
+
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
+}
+
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageTrimBox)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jfloatArray result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    float rect[4];
+    if (!FPDFPage_GetTrimBox(page, &rect[0], &rect[1], &rect[2], &rect[3])) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    }
+
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
+}
+
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageArtBox)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jfloatArray result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    float rect[4];
+    if (!FPDFPage_GetArtBox(page, &rect[0], &rect[1], &rect[2], &rect[3])) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    }
+
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
     return result;
 }
 
@@ -374,9 +456,9 @@ JNI_FUNC(jint, PdfiumCore, nativeGetPageHeightPoint)(JNI_ARGS, jlong pagePtr){
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     return (jint)FPDF_GetPageHeight(page);
 }
-JNI_FUNC(jdouble, PdfiumCore, nativeGetFontSize)(JNI_ARGS, jlong pagePtr, jint index){
-    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
-    return (jdouble)FPDFText_GetFontSize(page, index);
+JNI_FUNC(jdouble, PdfiumCore, nativeGetFontSize)(JNI_ARGS, jlong textPagePtr, jint index){
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
+    return (jdouble)FPDFText_GetFontSize(textPage, index);
 }
 JNI_FUNC(jobject, PdfiumCore, nativeGetPageSizeByIndex)(JNI_ARGS, jlong docPtr, jint pageIndex, jint dpi){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
@@ -490,7 +572,7 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject ob
 JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobject bitmap,
                                              jint dpi, jint startX, jint startY,
                                              jint drawSizeHor, jint drawSizeVer,
-                                             jboolean renderAnnot){
+                                             jboolean renderAnnot, jboolean textMask){
 
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
 
@@ -556,6 +638,10 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobj
 
     if(renderAnnot) {
     	flags |= FPDF_ANNOT;
+    }
+
+    if(textMask) {
+        flags |= FPDF_RENDER_TEXT_MASK;
     }
 
     FPDFBitmap_FillRect( pdfBitmap, baseX, baseY, baseHorSize, baseVerSize,
@@ -639,7 +725,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeGetBookmarkDestIndex)(JNI_ARGS, jlong docPtr, 
     if (dest == NULL) {
         return -1;
     }
-    return (jlong) FPDFDest_GetPageIndex(doc->pdfDocument, dest);
+    return (jlong) FPDFDest_GetDestPageIndex(doc->pdfDocument, dest);
 }
 
 JNI_FUNC(jlongArray, PdfiumCore, nativeGetPageLinks)(JNI_ARGS, jlong pagePtr) {
@@ -663,7 +749,7 @@ JNI_FUNC(jobject, PdfiumCore, nativeGetDestPageIndex)(JNI_ARGS, jlong docPtr, jl
     if (dest == NULL) {
         return NULL;
     }
-    unsigned long index = FPDFDest_GetPageIndex(doc->pdfDocument, dest);
+    unsigned long index = FPDFDest_GetDestPageIndex(doc->pdfDocument, dest);
     return NewInteger(env, (jint) index);
 }
 
@@ -783,13 +869,13 @@ JNI_FUNC(void, PdfiumCore, nativeCloseTextPages)(JNI_ARGS, jlongArray textPagesP
 
 //DLLEXPORT int STDCALL FPDFText_CountChars(FPDF_TEXTPAGE text_page);
 JNI_FUNC(jint, PdfiumCore, nativeTextCountChars)(JNI_ARGS, jlong textPagePtr){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint)FPDFText_CountChars(textPage);
 }
 
 //DLLEXPORT unsigned int STDCALL FPDFText_GetUnicode(FPDF_TEXTPAGE text_page, int index);
 JNI_FUNC(jint, PdfiumCore, nativeTextGetUnicode)(JNI_ARGS, jlong textPagePtr, jint index){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint)FPDFText_GetUnicode(textPage, (int)index);
 }
 
@@ -800,7 +886,7 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetUnicode)(JNI_ARGS, jlong textPagePtr, ji
                                            double* bottom,
                                            double* top);*/
 JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetCharBox)(JNI_ARGS, jlong textPagePtr, jint index){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jdoubleArray result = env->NewDoubleArray(4);
     if (result == NULL) {
         return NULL;
@@ -817,7 +903,7 @@ JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetCharBox)(JNI_ARGS, jlong textPag
                                                  double xTolerance,
                                                  double yTolerance);*/
 JNI_FUNC(jint, PdfiumCore, nativeTextGetCharIndexAtPos)(JNI_ARGS, jlong textPagePtr, jdouble x, jdouble y, jdouble xTolerance, jdouble yTolerance){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint)FPDFText_GetCharIndexAtPos(textPage, (double)x, (double)y, (double)xTolerance, (double)yTolerance);
 }
 
@@ -826,7 +912,7 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetCharIndexAtPos)(JNI_ARGS, jlong textPage
                                        int count,
                                        unsigned short* result);*/
 JNI_FUNC(jint, PdfiumCore, nativeTextGetText)(JNI_ARGS, jlong textPagePtr, jint start_index, jint count, jshortArray result){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jboolean isCopy = 0;
     unsigned short *arr = (unsigned short *)env->GetShortArrayElements(result, &isCopy);
     jint output = (jint)FPDFText_GetText(textPage, (int)start_index, (int)count, arr);
@@ -841,7 +927,7 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetText)(JNI_ARGS, jlong textPagePtr, jint 
                                           int start_index,
                                           int count);*/
 JNI_FUNC(jint, PdfiumCore, nativeTextCountRects)(JNI_ARGS, jlong textPagePtr, jint start_index, jint count){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint)FPDFText_CountRects(textPage, (int)start_index, (int) count);
 }
 
@@ -852,7 +938,7 @@ JNI_FUNC(jint, PdfiumCore, nativeTextCountRects)(JNI_ARGS, jlong textPagePtr, ji
                                         double* right,
                                         double* bottom);*/
 JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetRect)(JNI_ARGS, jlong textPagePtr, jint rect_index){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jdoubleArray result = env->NewDoubleArray(4);
     if (result == NULL) {
         return NULL;
@@ -873,7 +959,7 @@ JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetRect)(JNI_ARGS, jlong textPagePt
 */
 
 JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedText)(JNI_ARGS, jlong textPagePtr, jdouble left, jdouble top, jdouble right, jdouble bottom, jshortArray arr){
-    FPDF_TEXTPAGE *textPage = reinterpret_cast<FPDF_TEXTPAGE*>(textPagePtr);
+    FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jboolean isCopy = 0;
     unsigned short *buffer = NULL;
     int bufLen = 0;

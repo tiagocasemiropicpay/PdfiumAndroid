@@ -68,6 +68,7 @@ public class PdfiumCore {
     private native float[] nativeGetPageBleedBox(long pagePtr);
     private native float[] nativeGetPageTrimBox(long pagePtr);
     private native float[] nativeGetPageArtBox(long pagePtr);
+    private native float[] nativeGetPageBoundingBox(long pagePtr);
 
     //private native long nativeGetNativeWindow(Surface surface);
     //private native void nativeRenderPage(long pagePtr, long nativeWindowPtr);
@@ -404,6 +405,28 @@ public class PdfiumCore {
             Long pagePtr;
             if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
                 float[] o =  nativeGetPageArtBox(pagePtr);
+
+                RectF r = new RectF();
+                r.left = o[0];
+                r.top = o[1];
+                r.right = o[2];
+                r.bottom = o[3];
+
+                return r;
+            }
+            return new RectF();
+        }
+    }
+
+    /**
+     * Get page height in PostScript points (1/72th of an inch).<br>
+     * This method requires page to be opened.
+     */
+    public RectF getPageBoundingBox(PdfDocument doc, int index) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(index)) != null) {
+                float[] o =  nativeGetPageBoundingBox(pagePtr);
 
                 RectF r = new RectF();
                 r.left = o[0];

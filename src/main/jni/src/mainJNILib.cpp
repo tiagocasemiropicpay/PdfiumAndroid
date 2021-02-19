@@ -438,6 +438,31 @@ JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageArtBox)(JNI_ARGS, jlong pagePtr) 
     return result;
 }
 
+JNI_FUNC(jfloatArray, PdfiumCore, nativeGetPageBoundingBox)(JNI_ARGS, jlong pagePtr) {
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    jfloatArray result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    float rect[4];
+    FS_RECTF fsRect;
+    if (!FPDF_GetPageBoundingBox(page, &fsRect)) {
+        rect[0] = -1.0f;
+        rect[1] = -1.0f;
+        rect[2] = -1.0f;
+        rect[3] = -1.0f;
+    } else {
+        rect[0] = fsRect.left;
+        rect[1] = fsRect.top;
+        rect[2] = fsRect.right;
+        rect[3] = fsRect.bottom;
+    }
+
+    env->SetFloatArrayRegion(result, 0, 4, (jfloat*)rect);
+    return result;
+}
+
 JNI_FUNC(jint, PdfiumCore, nativeGetPageWidthPixel)(JNI_ARGS, jlong pagePtr, jint dpi){
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     return (jint)(FPDF_GetPageWidth(page) * dpi / 72);

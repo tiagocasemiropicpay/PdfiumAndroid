@@ -51,6 +51,9 @@ android {
         targetSdkVersion 30
         versionCode 1
         versionName "1.9.0"
+        ndk {
+            abiFilters 'x86', 'x86_64', 'armeabi', 'armeabi-v7a', 'arm64-v8a'
+        }
     }
     buildTypes {
         release {

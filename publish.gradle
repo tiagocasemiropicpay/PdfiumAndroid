@@ -1,0 +1,41 @@
+apply plugin: 'maven-publish'
+
+afterEvaluate {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId = project.findProperty("library.groupId")
+                artifactId = project.findProperty("library.artifactId")
+                version = project.findProperty("library.version") + versionSuffix()
+
+                artifact("$buildDir/outputs/aar/PdfiumAndroid-release.aar")
+                artifact androidSourcesJar
+            }
+        }
+
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                def repository = project.findProperty("library.repository")
+                url = uri("https://maven.pkg.github.com/PicPay/" + repository)
+                credentials {
+                    username = System.getenv("GITHUB_USER")
+                    password = System.getenv("GITHUB_USER_TOKEN")
+                }
+            }
+        }
+    }
+}
+
+task androidSourcesJar(type: Jar) {
+    getArchiveClassifier().set('sources')
+    from android.sourceSets.main.java.srcDirs
+}
+
+static def versionSuffix() {
+    def sufix = System.getenv("VERSION_SUFIX") ?: ''
+    if (sufix != '') {
+        sufix = "$sufix-${new Date().format('yyyyMMddHHmmss')}"
+    }
+    return sufix
+}
